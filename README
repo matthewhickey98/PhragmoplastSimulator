@@ -1,0 +1,7 @@
+This application simulates microtubule (MT) dynamics within the phragmoplast of a plant cell. Various parameters that control the simulation, the microtubule dynamics, and microtubule nucleation can be used. 
+Table 1 describes the parameters used in the simulation.
+The simulator can be used in two ways: via the Graphical User Interface (GUI) or via command- line operation. Both methods are described below. The GUI allows for automatic data processing and analysis. It produces images, plots, and turnover values for each simulation. The command-line interface only produces raw data outputs that must be manually analyzed.
+
+MICROTUBULE NUCLEATING FACTOR MACERATOR TETHERS AUGMIN7 TO MICROTUBULES AND GOVERNS PHRAGMOPLAST ARCHITECTURE
+Sharol Schmidt-Marcec, Alyssa Parish, Tetyana Smertenko, Matthew Hickey, Bernard M.A.G. Piette, Andrei Smertenko
+DOI: 

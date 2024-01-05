@@ -1,60 +1,126 @@
-#include "Phragmoplast.h"
+#include "Phragmoplast.hpp"
+
 using namespace std;
 
-//************************************************************/
-// Phragmoplast make out of MT
-Phragmoplast::Phragmoplast(int N_MT, double Thickness, double Width, double dx,
-                           int Npixel_X, int Npixel_Y, double grf_dt,
-                           double r_polym, double r_depolym,
-                           double r_gs,
-                           double r_sg, double r_reseed,
-                           double r_pg, double r_ps, double r_gp, double r_sp,
-                           double r_ps_CP, double r_ps_DZ,
-                           double r_me_polym, double r_me_depolym, double r_me_gs,
-                           double r_me_sg,
-                           double r_me_pg, double r_me_ps, double r_me_gp, double r_me_sp,
-                           const char *figname,
-                           double grf_max, double kymograph_amp, double dens_MT,
-                           double macet_dz_len, double macet_mz, double macet_dz,
-                           double macet_MT_len) : N_MT_(N_MT), Thickness_(Thickness), Width_(Width), dx_(dx), t_(0.0),
-                                                  Npixel_X_(Npixel_X), Npixel_Y_(Npixel_Y), grf_dt_(grf_dt),
-                                                  MaxSupperposition_(grf_max),
-                                                  r_polym_(r_polym), r_depolym_(r_depolym),
-                                                  r_gs_(r_gs), r_sg_(r_sg), r_reseed_(r_reseed),
-                                                  r_pg_(r_pg), r_ps_(r_ps), r_gp_(r_gp), r_sp_(r_sp), r_ps_CP_(r_ps_CP),
-                                                  r_ps_DZ_(r_ps_DZ),
-                                                  r_me_polym_(r_me_polym), r_me_depolym_(r_me_depolym), r_me_gs_(r_me_gs),
-                                                  r_me_sg_(r_me_sg),
-                                                  r_me_pg_(r_me_pg), r_me_ps_(r_me_ps), r_me_gp_(r_me_gp), r_me_sp_(r_me_sp),
-                                                  FRAP_t_(-1),
-                                                  fname_(figname, ".bma"), kymograph_bm_(0), kymograph_amp_(kymograph_amp),
-                                                  no_grf_(false), bin_N_(100), dens_MT_(dens_MT), macet_dz_len_(macet_dz_len),
-                                                  macet_mz_(macet_mz), macet_dz_(macet_dz), macet_MT_len_(macet_MT_len)
-{
-    Microtuble::set_bounds(Thickness, Width, dx);
-    tot_MT_0_ = tot_MT_ = dens_MT_ * Thickness_ * Width_;
 
-    sprintf(fig_name_, "%s_N%d_dMT%g_X%g_Y%g_dx%g_r+%g_r-%g_rc%g_rR%g_rs%g_pg%g_ps%g_gp%g_sp%g_spCP%g_spDZ%g",
-            figname,
-            N_MT_, dens_MT_, Thickness, Width, dx, r_polym, r_depolym, r_gs,
-            r_sg, r_reseed, r_pg, r_ps, r_gp, r_sp, r_ps_CP, r_ps_DZ);
-    fname_.set_prefix(fig_name_);
-    //cerr<<"Phragmoplast fig_name_="<<fig_name_<<"\n";
-    mt_array_ = new Microtuble[N_MT_];
+/**
+ * @brief Construct a new Phragmoplast
+ *
+ * @param N_MT                      number of microtubles
+ * @param Thickness                 thickness in microns
+ * @param Width                     width in microns
+ * @param dx                        step in x change in microns
+ * @param Npixel_X                  number of pixels in X
+ * @param Npixel_Y                  number of pixels in Y
+ * @param grf_dt                    time step in seconds between images
+ * @param r_polym                   rate of polymerization
+ * @param r_depolym                 rate of depolymerization
+ * @param r_gs                      rate of growth to shrink
+ * @param r_sg                      rate of shrink to grow
+ * @param r_reseed                  rate of reseeding
+ * @param r_pg                      rate of pause to grow
+ * @param r_ps                      rate of pause to shrink
+ * @param r_gp                      rate of grow to pause
+ * @param r_sp                      rate of shrink to pause
+ * @param r_ps_CP                   rate of pause to shrink in cell plate region
+ * @param r_ps_DZ                   rate of pause to shrink in distal zone region
+ * @param r_me_polym                rate of - end polymerization
+ * @param r_me_depolym              rate of - end depolymerization
+ * @param r_me_gs                   rate of - end growth to shrink
+ * @param r_me_sg                   rate of - end shrink to grow
+ * @param r_me_pg                   rate of - end pause to grow
+ * @param r_me_ps                   rate of - end pause to shrink
+ * @param r_me_gp                   rate of - end grow to pause
+ * @param r_me_sp                   rate of - end shrink to pause
+ * @param figname                   name of the output file
+ * @param grf_max                   maximum number of images
+ * @param kymograph_amp             amplitude of the kymograph
+ * @param dens_MT                   density of tublulin
+ * @param gloablSimulationIndex     index of the simulation
+ * @param t_max                     maximum time in seconds
+ * @param seedPA                    seed parameter A in the distribution
+ * @param seedPB                    seed parameter B in the distribution
+ * @param disttype                  type of distribution
+ * @param CPMax                     maximum X coordinate of the cell plate region
+ * @param DZMin                     minimum X coordinate of the distal zone region
+ * @param dzSeedMin                 mimum X coordinate of the distal zone seeding
+ * @param Slope                     slope of the distal zone seeding
+ * @param B                         intercept of the distal zone seeding
+ * @param frapT                     time of the frap in seconds`
+ * @param x1                        x coordinate of the first point of the frap
+ * @param x2                        x coordinate of the second point of the frap
+ * @param y1                        y coordinate of the first point of the frap
+ * @param y2                        y coordinate of the second point of the frap
+ * @param outputBma                 output BMA files
+ * @param outputJpeg                output JPEG files
+ * @param jpegBlurRad               blur radius of the JPEG files
+ */
+Phragmoplast::Phragmoplast(int N_MT, double Thickness, double Width, double dx, int Npixel_X, int Npixel_Y,
+                           double grf_dt, double r_polym, double r_depolym, double r_gs, double r_sg, double r_reseed,
+                           double r_pg, double r_ps, double r_gp, double r_sp, double r_ps_CP, double r_ps_DZ,
+                           double r_me_polym, double r_me_depolym, double r_me_gs, double r_me_sg, double r_me_pg,
+                           double r_me_ps, double r_me_gp, double r_me_sp, const char *figname, double grf_max,
+                           double kymograph_amp, double dens_MT, int gloablSimulationIndex, double t_max, double seedPA, double seedPB,
+                           int disttype, double CPMax, double DZMin, double dzSeedMin, double Slope, double B,
+                           double frapT, double x1, double x2, double y1, double y2, bool outputBma, bool outputJpeg,
+                           double jpegBlurRad)
+    : NumberMT(N_MT), ThicknessMT(Thickness), WidthMT(Width), time(0.0), DeltaX(dx), numPixelX(Npixel_X),
+      numPixelY(Npixel_Y), figureStep(grf_dt), MaxSupperposition_(grf_max), ratePolym(r_polym), rateDepolym(r_depolym),
+      rateGrowth2Shrink(r_gs), rateShrink2Growth(r_sg), rateReseed(r_reseed), ratePause2Growth(r_pg),
+      ratePause2Shrink(r_ps), rateGrowth2Pause(r_gp), rateShrink2Pause(r_sp), ratePause2ShrinkCellPlate(r_ps_CP),
+      ratePause2ShrinkDistalZone(r_ps_DZ), r_me_polym_(r_me_polym), r_me_depolym_(r_me_depolym), r_me_gs_(r_me_gs),
+      r_me_sg_(r_me_sg), r_me_pg_(r_me_pg), r_me_ps_(r_me_ps), r_me_gp_(r_me_gp),
+      r_me_sp_(r_me_sp), FrameName::FrameName(figname, ".bma"), kymographBitmap(0), kymographAmp(kymograph_amp),
+      OutputBMA(outputBma), numberBins(100), densityTubulin(dens_MT), gloablSimIndex(gloablSimulationIndex), seedParameterA(seedPA),
+      seedParameterB(seedPB), distributionType(disttype), CellPlateXMax(CPMax), DistalZoneXMin(DZMin),
+      DistalSeedMin(dzSeedMin), reseedSlope(Slope), reseedIntercept(B), FRAPTime(frapT), FRAPX1(x1), FRAPX2(x2),
+      FRAPY1(y1), FRAPY2(y2), OutputJPEG(outputJpeg), JPEGBlurRadius(jpegBlurRad)
+{
+    NoMatureMode = false;
+    initialLengthMT = totalLengthMT = densityTubulin * ThicknessMT * WidthMT;
+    figureName.resize(1024);
+    stringstream ss;
+    ss << figname << "_N" << NumberMT << "_dMT" << densityTubulin << "_X" << Thickness << "_Y" << Width << "_dx" << dx
+       << "_r+" << r_polym << "_r-" << r_depolym << "_Rgs" << r_gs << "_Rsg" << r_sg << "_Rreseed" << r_reseed << "_Rpg"
+       << r_pg << "_Rps" << r_ps << "_Rgp" << r_gp << "_Rsp" << r_sp << "_RspCP" << r_ps_CP << "_RspDZ" << r_ps_DZ
+       << "_";
+    figureName = ss.str();
+    SetPrefix(figureName);
+    cout << "Phragmoplast figureName=" << figureName << "\n";
+    MTArray.resize(NumberMT);
+    kymographLines = (int)floor(t_max / figureStep + 0.999) + 1;
+    kymographBitmap = new Bitmap(Npixel_X, kymographLines, Thickness, Width, t_max, 1.0);
+    cout << "Slope:" << reseedSlope << "    b: " << reseedIntercept << endl;
+}
+Phragmoplast::~Phragmoplast()
+{
+    delete kymographBitmap;
 }
 
-void Phragmoplast::init(double frac_treadmill, double frac_grow_out,
-                        double frac_grow_in, double theta_max,
-                        double frac_seed_CP, double frac_seed_distal,
-                        double frac_seed_middle, double frac_seed_middle_slope, double L0)
+/**
+ * @brief Initialize a new simulation with random length
+ *
+ * @param frac_treadmill            fraction of the MTs that treadmill
+ * @param frac_grow_out             fraction of the MTs that grow out
+ * @param frac_grow_in              fraction of the MTs that grow in
+ * @param theta_max                 maximum angle of the MTs
+ * @param frac_seed_CP              fraction of the MTs that seed in the cell plate
+ * @param frac_seed_distal          fraction of the MTs that seed in the distal zone
+ * @param frac_seed_middle          fraction of the MTs that seed in the middle
+ * @param frac_seed_middle_slope    slope of the middle seed
+ * @param l0                        initial length of the MTs
+ */
+void Phragmoplast::Init(double frac_treadmill, double frac_grow_out, double frac_grow_in, double theta_max,
+                        double frac_seed_CP, double frac_seed_distal, double frac_seed_middle,
+                        double frac_seed_middle_slope, double l0)
 {
     double l_treadmill, l_grow_out, l_grow_in, tot;
     double l_seed_CP, l_seed_distal, l_seed_middle, p;
     double x1, y1, L, theta;
 
     int type;
-
-    theta_max_ = theta_max;
+    InitialLength = l0;
+    ThetaMax = theta_max;
     tot = frac_treadmill + frac_grow_out + frac_grow_in;
     frac_treadmill /= tot;
     frac_grow_out /= tot;
@@ -62,18 +128,33 @@ void Phragmoplast::init(double frac_treadmill, double frac_grow_out,
     l_treadmill = frac_treadmill;
     l_grow_out = frac_grow_out + l_treadmill;
     l_grow_in = frac_grow_in + l_grow_out;
-
-    tot = frac_seed_CP + frac_seed_distal + frac_seed_middle;
-    frac_seed_CP /= tot;
-    frac_seed_distal /= tot;
-    frac_seed_middle /= tot;
+    // tot = frac_seed_CP + frac_seed_distal + frac_seed_middle;
+    // frac_seed_CP /= tot;
+    // frac_seed_distal /= tot;
+    // frac_seed_middle /= tot;
     l_seed_CP = frac_seed_CP;
     l_seed_distal = frac_seed_distal + l_seed_CP;
     l_seed_middle = frac_seed_middle + l_seed_distal;
 
-    for (int i = 0; i < N_MT_; ++i)
+    std::ofstream initFile(figureName + "_InitFile.csv");
+    initFile << "Index,x1,y1,L,theta,type,location" << std::endl;
+
+    cout << frac_seed_middle * NumberMT << endl;
+
+    int numDistal = 0;
+
+    std::random_device rd;
+    std::cauchy_distribution<double> cauchyDist(seedParameterA, seedParameterB);
+    std::normal_distribution<double> normDist(seedParameterA, seedParameterB);
+    std::weibull_distribution<double> weibullDist(seedParameterA, seedParameterB);
+    std::exponential_distribution<double> exponentialDist(seedParameterA);
+
+    for (int i = 0; i < NumberMT; ++i)
     {
-        p = rnd_.next();
+        L = Random(InitialLength); // NEW thicknessMT -> initialLength
+        y1 = Random(WidthMT);
+        theta = Random(theta_max);
+        p = Random(1);
         if (p < l_treadmill)
         {
             type = PHP_TYPE_TREADMILL;
@@ -87,452 +168,427 @@ void Phragmoplast::init(double frac_treadmill, double frac_grow_out,
             type = PHP_TYPE_GROW_INSIDE;
         }
 
-        p = rnd_.next();
-        if ((p < l_seed_CP) || (type == PHP_TYPE_TREADMILL))
+        //
+        // cellplate and middle will be seeded on gradient distribution. The rest
+        // of the seeds will be randomly seeded in the distal region
+        //
+
+        if (numDistal < (int)(frac_seed_distal * NumberMT))
         {
-            x1 = 0;
-            if (type == PHP_TYPE_GROW_INSIDE)
-            {
-                type = PHP_TYPE_GROW_OUTSIDE;
-            }
-        }
-        else if (p < l_seed_distal)
-        {
-            x1 = Thickness_ - Microtuble::min_L__;
+            x1 = (ThicknessMT - DistalSeedMin) * Random(1) + DistalSeedMin;
+
             type = PHP_TYPE_GROW_INSIDE;
+            initFile << i << "," << x1 << "," << y1 << "," << L << "," << theta << "," << type << ",D" << std::endl;
+            numDistal++;
+            cout << "NumDistal: " << numDistal << endl;
         }
         else
         {
-            if (frac_seed_middle_slope > 1e-6)
+            do
             {
-                x1 = rnd_.trapezium(frac_seed_middle_slope) * Thickness_;
-            }
-            else
+                if (distributionType == 0)
+                {
+                    x1 = cauchyDist(rd);
+                }
+
+                else if (distributionType == 1)
+                {
+                    x1 = normDist(rd);
+                }
+
+                else if (distributionType == 2)
+                {
+                    x1 = weibullDist(rd);
+                }
+
+                else
+                {
+                    x1 = DistalSeedMin * (1 - exponentialDist(rd));
+                }
+
+            } while (x1 < 0 || x1 > DistalSeedMin);
+
+            if (x1 < CellPlateXMax)
             {
-                x1 = rnd_.next() * Thickness_;
+                type = PHP_TYPE_GROW_OUTSIDE;
             }
+
+            if (x1 > DistalZoneXMin)
+            {
+                type = PHP_TYPE_GROW_INSIDE;
+            }
+
+            initFile << i << "," << x1 << "," << y1 << "," << L << "," << theta << "," << type << ",M" << std::endl;
         }
-
-        L = rnd_.next()*L0; // NEW Thickness_ -> L0
-        tot_MT_ -= L;
-        cout<<"totalMT0: "<<tot_MT_0_<<" total MT: "<<tot_MT_<<" L: "<<L<<endl;
-        y1 = rnd_.next() * Width_;
-        theta = (rnd_.next() - 0.5) * 2.0 * theta_max;
-
-        mt_array_[i].init(x1, y1, L, theta, type, this);
+        MTArray[i].Init(x1, y1, L, theta, type, this);
     }
+    initFile.close();
 }
 
-void Phragmoplast::init_fixed_L(double L0, double theta_max)
+/**
+ * @brief Initialize a new simulation with fixed length
+ *
+ * @param initialLength
+ * @param theta_max
+ */
+void Phragmoplast::InitFixedLength(double initialLength, double theta_max)
 {
     double y1, theta;
-
-    cerr << "init_fixed_L(" << L0 << "," << theta_max << ")\n";
-
-    theta_max_ = theta_max;
-
-    for (int i = 0; i < N_MT_; ++i)
+    std::cout << "init_fixed_L(" << initialLength << "," << theta_max << ")\n";
+    ThetaMax = theta_max;
+    for (int i = 0; i < NumberMT; ++i)
     {
-        y1 = rnd_.next() * Width_;
-        theta = (rnd_.next() - 0.5) * 2.0 * theta_max;
-
-        mt_array_[i].init(Thickness_, y1, L0, theta, PHP_TYPE_GROW_INSIDE, this);
-        mt_array_[i].set_state_p(PHP_STATE_SHRINKING);
+        y1 = this->Next() * WidthMT;
+        theta = (this->Next() - 0.5) * 2.0 * theta_max;
+        MTArray[i].Init(ThicknessMT, y1, initialLength, theta, PHP_TYPE_GROW_INSIDE, this);
+        MTArray[i].SetPlusState(PHP_STATE_SHRINKING);
     }
 }
 
-// Evolve all MT synchonously from t_min to t_max
-void Phragmoplast::run_sync(double t_min, double t_max, long seed)
+/**
+ * @brief Evolve all MT synchonously from t_min to t_max
+ *
+ * @param t_min     start time
+ * @param t_max     end time
+ * @param seed      seed for the random number generator
+ */
+void Phragmoplast::RunSync(double t_min, double t_max, long seed)
 {
+    timeMax = t_max;
     double next_grf_t;
     ofstream ofs;
     bool just_frapped = false;
+    stringstream ss;
+    ss << "DATA_" << this->gloablSimIndex;
+    string folderName;
+    ss >> folderName;
+    std::cout << folderName << endl;
+    ofstream lengthsFile(figureName + "_LengthsFile.csv");
+    ofstream fractionFile(figureName + "_Fractions.csv");
+    ofstream relMTFile(figureName + "_RelativeMTDensity.csv");
+    ofstream totalLengthFile(figureName + "_TotalMTLength.csv");
 
-    cerr << "run_sync(" << t_min << "," << t_max << "," << seed << ")\n";
+    std::cout << "run_sync(" << t_min << "," << t_max << "," << seed << ")\n";
 
-    index_kymograph_ = 0;
-    kymograph_lines_ = (int)floor(t_max / grf_dt_ + 0.999) + 1;
-    delete kymograph_bm_;
-    //cerr << "kymograph_lines_="<<kymograph_lines_<<"\n";
-    //cerr << "Npixel_X_="<<Npixel_X_<<"\n";
-    //cerr << "Thickness_="<<Width_<<"\n";
-    cerr << "FRAPx1__=" << Microtuble::FRAPx1__ << " FRAPy1__=" << Microtuble::FRAPy1__ << "FRAPx2__=" << Microtuble::FRAPx2__ << " FRAPy2__=" << Microtuble::FRAPy2__ << "\n";
+    kymographIndex = 0;
+    kymographLines = (int)floor(t_max / figureStep + 0.999) + 1;
+    delete kymographBitmap;
+    std::cout << "FRAPx1__=" << FRAPX1 << " FRAPy1__=" << FRAPY1 << "FRAPx2__=" << FRAPX2 << " FRAPy2__=" << FRAPY2
+              << "\n";
 
-    kymograph_bm_ = new Bitmap(Npixel_X_, kymograph_lines_, Thickness_,
-                               Width_, t_max, 1.0);
-    if (kymograph_amp_ <= 0)
-    {
-        kymograph_bm_->set_Max(-1);
-    }
+    kymographBitmap = new Bitmap(numPixelX, kymographLines, ThicknessMT, WidthMT, t_max, 1.0);
+    if (kymographAmp <= 0)
+        kymographBitmap->set_Max(-1);
 
-    sprintf(kymograph_name_, "%s_kymograph.jpeg", fig_name_);
-    sprintf(luminosity_name_, "%s_luminosity.txt", fig_name_);
-    sprintf(histogram_name_, "%s_histogram", fig_name_);
+    kymographName = figureName + "_kymograph.jpeg";
 
-    ofs.open(luminosity_name_);
-    ofs << "#t luminosity empty mature growing shrinking pause gro gri tm tota_L average_L\n";
+    luminosityName = figureName + "_luminosity.txt";
+    histogramName = figureName + "_histogram";
+
+    ofs.open(luminosityName);
+    ofs << "t,luminosity,numEmpty,numMature,numGrowing,numShrinking,numPause,growOut,growIn,treadmill,totalLen,averageLen,relMT\n";
     ofs.close();
-    for (int i = 0; i < N_MT_; ++i)
+
+    for (int i = 0; i < NumberMT; ++i)
     {
-        mt_array_[i].set_t(t_min);
+        MTArray[i].SetTime(t_min);
     }
 
-    cerr << "t_min = " << t_min << "\n";
-
-    if ((t_ = t_min) < 1e-16)
+    if ((time = t_min) < 1e-16)
     {
-        evolve_sync_all_MT_until(0.0);
-        t_ = 0.0;
+        SyncAllMTUntil(0.0);
+        time = 0.0;
     }
-    ofstream lengthsFile("LengthsFile.csv");
-    lengthsFile << endl << "T = " << t_ << endl;
 
-    for (int i = 0; i < N_MT_; i++)
-    {
-        lengthsFile << mt_array_[i].L() << ","<<endl;
-    }       
-            
-    make_fig(t_);
-    make_histogram(t_);
+    MakeFigure(time);
+    MakeHistogram(time);
+    next_grf_t = time + figureStep;
 
-    next_grf_t = t_ + grf_dt_;
-    ofstream fractionFile("Fractions.csv");
-    fractionFile << "Time, SeededCount, UnseededCount, 0_.1, .1_.2, .3_.4, .5_.6, .7_.8, .9_1.0, 1.1_1.2, 1.3_1.4, 1.4_1.5, 1.5+" << endl;
-    
-    while (t_ <= t_max)
+    fractionFile
+        << "Time, SeededCount, UnseededCount, [0, 0.06], (0.06, 0.12], (0.12, 0.18], (0.18, 0.24], (0.24, 0.36], (0.36, 0.42], \
+     (0.42, 0.48], (0.48, 0.54], (0.54, 0.60], (0.66, 0.72], (0.72, 0.78], (0.78, 0.84], (0.84, 0.90], (0.96, 1.02], (1.02, 1.08], \
+     (1.08, 1.14], (1.14, 1.20], (1.20, 1.26], (1.26, 1.32], (1.32, 1.38], (1.38, 1.42], (1.42, 1.5]"
+        << endl;
+
+    while (time <= t_max)
     {
-        //get the fractions
-        //write fractions to Fractions.csv
-        if ((int)t_ % 60 == 0 || (int)t_ == 0)
+        //
+        // Calculate the fractions and write them to a file
+        //
+
+        double averageL;
+        totalLengthFile << time << "," << TotalLength(averageL) << "," << averageL << endl;
+        lengthsFile << time << ",";
+        relMTFile << time << "," << RelativeMT() << "," << totalLengthMT << "," << initialLengthMT << endl;
+
+        int count[25] = {0};
+        int emptyCount = 0;
+        int seededCount = 0;
+        for (int i = 0; i < NumberMT; i++)
         {
-            lengthsFile << endl
-                        << "T = " << t_ << endl;
-
-            int count[16] = {0};
-            int emptyCount = 0;
-            int seededCount = 0;
-            for (int i = 0; i < N_MT_; i++)
+            double length = MTArray[i].Length();
+            lengthsFile << length << ",";
+            if (length <= 0)
             {
-                double length = mt_array_[i].L();
-                if (length <= 0)
+                emptyCount++;
+            }
+            else
+            {
+                seededCount++;
+
+                for (int j = 0; j < 25; j++)
                 {
-                    emptyCount++;
-                }
-                else
-                {
-                    seededCount++;
-                    lengthsFile << length << endl;
-                    if (length <= .1)
+                    if (length <= 0.06 + 0.06 * j)
                     {
-                        count[0]++;
-                        continue;
-                    }
-                    else if (length <= .2)
-                    {
-                        count[1]++;
-                        continue;
-                    }
-                    else if (length <= .3)
-                    {
-                        count[2]++;
-                        continue;
-                    }
-                    else if (length <= .4)
-                    {
-                        count[3]++;
-                        continue;
-                    }
-                    else if (length <= .5)
-                    {
-                        count[4]++;
-                        continue;
-                    }
-                    else if (length <= .6)
-                    {
-                        count[5]++;
-                        continue;
-                    }
-                    else if (length <= .7)
-                    {
-                        count[6]++;
-                        continue;
-                    }
-                    else if (length <= .8)
-                    {
-                        count[7]++;
-                        continue;
-                    }
-                    else if (length <= .9)
-                    {
-                        count[8]++;
-                        continue;
-                    }
-                    else if (length <= 1.0)
-                    {
-                        count[9]++;
-                        continue;
-                    }
-                    else if (length <= 1.1)
-                    {
-                        count[10]++;
-                        continue;
-                    }
-                    else if (length <= 1.2)
-                    {
-                        count[11]++;
-                        continue;
-                    }
-                    else if (length <= 1.3)
-                    {
-                        count[12]++;
-                        continue;
-                    }
-                    else if (length <= 1.4)
-                    {
-                        count[13]++;
-                        continue;
-                    }
-                    else if (length <= 1.5)
-                    {
-                        count[14]++;
-                        continue;
-                    }
-                    else
-                    {
-                        count[15]++;
-                        continue;
+                        count[j]++;
+                        break;
                     }
                 }
             }
+        }
+        lengthsFile << endl;
 
-            double fracs[16];
-            for (int i = 0; i < 16; i++)
-                fracs[i] = (double)count[i] / (double)seededCount;
-
-            fractionFile << t_ << ", "<<seededCount<<", "<<emptyCount<<", ";
-            for (int i = 0; i < 16; i++)
-                fractionFile << fracs[i] << ", ";
-
-            fractionFile << endl;
+        fractionFile << time << ", " << seededCount << ", " << emptyCount << ", ";
+        for (int i = 0; i < 25; i++)
+        {
+            fractionFile << count[i] << ", ";
         }
 
-        if ((FRAP_t_ > 0) && (FRAP_t_ <= next_grf_t))
+        fractionFile << endl;
+
+        if ((FRAPTime > 0) && (FRAPTime <= next_grf_t))
         {
-            evolve_sync_all_MT_until(FRAP_t_);
-            bleach();
-            cout << " FRAP at t=" << t_ << "\n";
-            FRAP_t_ = -1;
+            SyncAllMTUntil(FRAPTime);
+            Bleach();
+            std::cout << " FRAP at t=" << time << "\n";
+            FRAPTime = -1;
             just_frapped = true;
         }
 
         if (just_frapped)
         {
             just_frapped = false;
-            if (t_ <= next_grf_t - grf_dt_ * 0.01)
-                evolve_sync_all_MT_until(next_grf_t);
+            if (time <= next_grf_t - figureStep * 0.01)
+            {
+                SyncAllMTUntil(next_grf_t);
+            }
         }
         else
         {
-            evolve_sync_all_MT_until(next_grf_t);
+            SyncAllMTUntil(next_grf_t);
         }
 
-        make_fig(next_grf_t);
-        make_histogram(next_grf_t);
+        MakeFigure(next_grf_t);
+        MakeHistogram(next_grf_t);
 
-        cerr << "t = " << t_ << "\n";
-        next_grf_t += grf_dt_;
+        std::cout << "t = " << time << "\n";
+        next_grf_t += figureStep;
     }
-    if (t_ > next_grf_t - grf_dt_ * 0.5)
+    if (time > next_grf_t - figureStep * 0.5)
     {
-        make_fig(next_grf_t);
-        make_histogram(next_grf_t);
+        MakeFigure(next_grf_t);
+        MakeHistogram(next_grf_t);
     };
 
-    cerr << "run done. t=" << t_ << "\n";
     fractionFile.close();
     lengthsFile.close();
-    make_kymograph();
+    relMTFile.close();
+    totalLengthFile.close();
+    MakeKymograph();
+
+    std::cout << "Run finished: t = " << time << "\n";
 }
 
-void Phragmoplast::evolve_sync_all_MT_until(double tmax)
+/**
+ * @brief Syn all microtubules until a certain time
+ *
+ * @param tmax  the time to sync to
+ */
+void Phragmoplast::SyncAllMTUntil(double tmax)
 {
     double dt, dt_min;
     int MT_min = -1, event, event_min;
-    int trace = 0;
 
-    //int event_no[PHP_EVENT_M_RESEED+1];// MONITOR
-    //for(i=0; i<=PHP_EVENT_M_RESEED;i++) { event_no[i] = 0; } // MONITOR
-
-    //std::cerr<<"evolve_sync_all_MT_until("<<tmax<<")\n";
-    while (t_ < tmax)
+    while (time < tmax)
     {
         dt_min = 1e64;
-        for (int i = 0; i < N_MT_; ++i)
+
+        for (int i = 0; i < NumberMT; ++i)
         {
-            event = mt_array_[i].select_next_event(dt);
+            dt = MTArray[i].SelectNextEvent();
 
             if (dt < dt_min)
             {
                 dt_min = dt;
                 MT_min = i;
-                event_min = event;
+                event_min = MTArray[i].GetMinEvent();
             }
         }
-        if (t_ + dt_min > tmax) // time to stop
+        if (time + dt_min > tmax) // time to stop
         {
-            t_ = tmax;
+            time = tmax;
             return;
         }
-        //cerr<<"t="<<t_<<" dt="<<dt_min<<" Event="<<event_min<<" i="<<MT_min<<" tot_MT_="<<tot_MT_<<"\n";
-        //event_no[event_min]++; // MONITOR
-        //cout<<MT_min << ", " << event_min << ", " << tot_MT_0_ << ", " << tot_MT_ << ", " << rel_MT_<<endl;
-
-        mt_array_[MT_min].do_event(event_min);
-        t_ += dt_min;
+        MTArray[MT_min].DoEvent(event_min);
+        time += dt_min;
 
 #ifdef MONITOR
         if (trace++ > 10)
         {
-            cerr << "t=" << t_ << " last event:" << event_min << "\n";
+            cout << "t=" << t_ << " last event:" << event_min << "\n";
             trace = 0;
             for (int i = PHP_EVENT_P_GROW; i <= PHP_EVENT_P_RESEED; i++) // MONITOR
             {
-                cerr << "event_no[" << i << "]:" << event_no[i] << "\n";
+                cout << "event_no[" << i << "]:" << event_no[i] << "\n";
                 event_no[i] = 0;
             }
             for (int i = PHP_EVENT_M_GROW; i <= PHP_EVENT_M_RESEED; i++) // MONITOR
             {
-                cerr << "event_no[" << i << "]:" << event_no[i] << "\n";
+                cout << "event_no[" << i << "]:" << event_no[i] << "\n";
                 event_no[i] = 0;
             }
         }
 #endif
+        // cout << "t_ = " << t_ << "    tmax = " << tmax << endl;
     }
 };
 
-// Bleach each MT one by one
-void Phragmoplast::bleach()
+/**
+ * @brief Bleach each microtubule
+ *
+ */
+void Phragmoplast::Bleach()
 {
-    for (int i = 0; i < N_MT_; ++i)
+    for (int i = 0; i < NumberMT; ++i)
     {
-        //cerr<<"bleach "<<i;
-        mt_array_[i].bleach();
+        MTArray[i].Bleach();
     }
 }
 
+//
 // Compute the total MT length and average length
 // Write average length in double &average_L
-double Phragmoplast::total_MT_length(double &average_L)
+//
+
+/**
+ * @brief Compute the total and average length of all the microtubules
+ *
+ * @param average_L     the average length of all the microtubules
+ * @return double       the total length of all the microtubules
+ */
+double Phragmoplast::TotalLength(double &average_L)
 {
     double L = 0.0;
     int n = 0;
 
-    for (int i = 0; i < N_MT_; ++i)
+    for (int i = 0; i < NumberMT; ++i)
     {
-        if (mt_array_[i].get_state_p() != PHP_STATE_EMPTY)
+        if (MTArray[i].GetPlusState() != PHP_STATE_EMPTY)
         {
             ++n;
-            L += mt_array_[i].L();
+            L += MTArray[i].Length();
         }
     }
     average_L = (n > 0) ? L / n : 0;
     return (L);
 }
 
-void Phragmoplast::make_fig(double t)
+void Phragmoplast::MakeFigure(double t)
 {
-    Bitmap bm(Npixel_X_, Npixel_Y_, Thickness_, Width_, t,
-              MaxSupperposition_);
+    Bitmap bm(numPixelX, numPixelY, ThicknessMT, WidthMT, t, MaxSupperposition_);
     ofstream ofs;
     double empty = 0, mature = 0, growing = 0, shrinking = 0, pause = 0, L, average_L;
     double Grow_out = 0, Grow_in = 0, teadmill = 0;
 
-    //cerr<<"make_fig() Npixel_Y_="<<Npixel_Y_<<"\n";
-    for (int i = 0; i < N_MT_; ++i)
+    for (int i = 0; i < NumberMT; ++i)
     {
-        //cerr<<" Draw MT "<<i<<" type="<<mt_array_[i].get_type()
-        //<<" state="<<mt_array_[i].get_state_p()<<"\n";
-        mt_array_[i].draw(bm);
+        MTArray[i].Draw(bm);
 
-        if (mt_array_[i].get_state_p() == PHP_STATE_EMPTY)
+        if (MTArray[i].GetPlusState() == PHP_STATE_EMPTY)
         {
             ++empty;
         }
-        if (mt_array_[i].get_state_p() == PHP_STATE_MATURE)
+        if (MTArray[i].GetPlusState() == PHP_STATE_MATURE)
         {
             ++mature;
         }
-        if (mt_array_[i].get_state_p() == PHP_STATE_GROWING)
+        if (MTArray[i].GetPlusState() == PHP_STATE_GROWING)
         {
             ++growing;
         }
-        if (mt_array_[i].get_state_p() == PHP_STATE_SHRINKING)
+        if (MTArray[i].GetPlusState() == PHP_STATE_SHRINKING)
         {
             ++shrinking;
         }
-        if (mt_array_[i].get_state_p() == PHP_STATE_PAUSE)
+        if (MTArray[i].GetPlusState() == PHP_STATE_PAUSE)
         {
             ++pause;
         }
-
-        if (mt_array_[i].get_type() == PHP_TYPE_GROW_OUTSIDE)
+        if (MTArray[i].GetType() == PHP_TYPE_GROW_OUTSIDE)
         {
             ++Grow_out;
         }
-        if (mt_array_[i].get_type() == PHP_TYPE_GROW_INSIDE)
+        if (MTArray[i].GetType() == PHP_TYPE_GROW_INSIDE)
         {
             ++Grow_in;
         }
-        if (mt_array_[i].get_type() == PHP_TYPE_TREADMILL)
+        if (MTArray[i].GetType() == PHP_TYPE_TREADMILL)
         {
             ++teadmill;
         }
     }
-
-    //bm.gaussian_blur(blur_radius_);
-
-    add_kymograph_line(bm);
-
-    //bm.output(fname_.next_name());
-    if (!no_grf_)
+    // bm.gaussian_blur(blur_radius_);
+    AddKymographLine(bm);
+    // bm.output(fname_.next_name());
+    NextName();
+    if (OutputBMA == 1)
     {
-        bm.save(fname_.next_name());
-        save_list(t);
+        bm.Save(CurrentName());
+        SaveList(t);
     }
-    L = total_MT_length(average_L);
+    if (OutputJPEG == 1)
+    {
+        if (JPEGBlurRadius > 0.2)
+        {
+            bm.GaussianBlur(JPEGBlurRadius);
+        }
+        bm.Output(CurrentNameOtherSuffix(".jpg"), true, 0);
+    }
 
-    ofs.open(luminosity_name_, std::ios::app);
-    ofs << t << " " << bm.luminosity(Microtuble::FRAPx1__ + Microtuble::dx0__, Microtuble::FRAPy1__ + Microtuble::dx0__, Microtuble::FRAPx2__ - Microtuble::dx0__, Microtuble::FRAPy2__ - Microtuble::dx0__) / N_MT_
-        << " " << empty << " " << mature << " " << growing << " " << shrinking << " " << pause << " "
-        << Grow_out << " " << Grow_in << " " << teadmill << " "
-        << L << " " << average_L << "\n";
+    L = TotalLength(average_L);
+    ofs.open(luminosityName, std::ios::app);
+    ofs << t << "," << bm.Luminosity(FRAPX1 + DeltaX, FRAPY1 + DeltaX, FRAPX2 - DeltaX, FRAPY2 - DeltaX) / NumberMT
+        << "," << empty << "," << mature << "," << growing << "," << shrinking << "," << pause << "," << Grow_out << ","
+        << Grow_in << "," << teadmill << "," << L << "," << average_L << "," << RelativeMT() << "\n";
     ofs.close();
 }
 
-void Phragmoplast::make_histogram(double t)
+/**
+ * @brief Make a histogram of the MT lengths
+ *
+ * @param t     the current time
+ */
+void Phragmoplast::MakeHistogram(double t)
 {
     ofstream ofs;
     double hist[1000];
     int j, N;
     char filename[PHP_PATH_LENGTH + 100];
-
-    //cerr<< "make_histogram("<<t<<")\n";
-
-    sprintf(filename, "%s_t%g.txt", histogram_name_, t);
-
-    for (j = 0; j < bin_N_; ++j)
+    // cout<< "make_histogram("<<t<<")\n";
+    sprintf(filename, "%s_t%g.txt", histogramName.c_str(), t);
+    for (j = 0; j < numberBins; ++j)
     {
         hist[j] = 0;
     }
     N = 0;
 
-    for (int i = 0; i < N_MT_; ++i)
+    for (int i = 0; i < NumberMT; ++i)
     {
-        if (mt_array_[i].get_state_p() != PHP_STATE_EMPTY)
+        if (MTArray[i].GetPlusState() != PHP_STATE_EMPTY)
         {
-            j = (int)floor(mt_array_[i].L() * (bin_N_ - 1) / Microtuble::xmax__);
-            if (j >= bin_N_)
-                j = bin_N_ - 1;
+            j = (int)floor(MTArray[i].Length() * (numberBins - 1) / ThicknessMT);
+            if (j >= numberBins)
+                j = numberBins - 1;
             hist[j] += 1;
             ++N;
         }
@@ -541,105 +597,72 @@ void Phragmoplast::make_histogram(double t)
     ofs.open(filename, std::ios::out);
     ofs << "# t=" << t << "\n";
     ofs << "# N=" << N << "\n";
-    for (j = 0; j < bin_N_; ++j)
+    for (j = 0; j < numberBins; ++j)
     {
-        ofs << j * Microtuble::xmax__ / (bin_N_ - 1.0) << " " << hist[j] / N << "\n";
+        ofs << j * ThicknessMT / (numberBins - 1.0) << " " << hist[j] / N << "\n";
     }
 
     ofs.close();
 }
 
-void Phragmoplast::save_list(double t)
+/**
+ * @brief Save a list of information about microtubule positions
+ *
+ * @param t         the current time
+ */
+void Phragmoplast::SaveList(double t)
 {
-    ofstream ofs(fname_.current_name_other_suffix(".txt"), std::ios::app);
+    ofstream ofs(this->CurrentNameOtherSuffix(".txt"), std::ios::app);
 
     ofs << "#index type state x1 y1 x2 y2 bleached_x1 bleached_x2 \n";
     ofs << "#t=" << t << "\n";
-    for (int i = 0; i < N_MT_; ++i)
+    for (int i = 0; i < NumberMT; ++i)
     {
         ofs << i << " ";
-        mt_array_[i].txt_save(ofs);
+        MTArray[i].TextSave(ofs);
     }
 }
 
-void Phragmoplast::add_kymograph_line(Bitmap &bm)
+/**
+ * @brief Add a line to the kymograph
+ *
+ * @param bm    the bitmap
+ */
+void Phragmoplast::AddKymographLine(Bitmap &bm)
 {
-    double v[Npixel_X_];
+    std::vector<double> v(numPixelX);
 
-    bm.average(v, kymograph_amp_);
+    bm.Average(v, kymographAmp);
 
-    kymograph_bm_->add_line(v, index_kymograph_++);
+    kymographBitmap->AddLine(v, kymographIndex++);
 }
 
-void Phragmoplast::make_kymograph()
+/**
+ * @brief Make a kymograph
+ *
+ */
+void Phragmoplast::MakeKymograph()
 {
-    kymograph_bm_->output(kymograph_name_);
+    kymographBitmap->Save(kymographName);
+    kymographBitmap->Output(kymographName, false, this->time);
 }
 
-double Phragmoplast::R_gs(double L_MT, double x)
+/**
+ * @brief Get the rate of reseed, which is influenced by the position and type of the microtubule
+ *
+ * @param xInit     the seed x position
+ * @param type      the type of the microtubule
+ * @return double   the rate of reseed
+ */
+double Phragmoplast::RateReseed(double xInit, int type)
 {
-    double r_gs = r_gs_ / (rel_MT_ + 1e-6);
-
-    if (L_MT > macet_MT_len_)
-    {
-        double macet_f = macet_mz_ + (macet_mz_ - macet_dz_) *
-                                         (x - Width_ + macet_MT_len_) / macet_MT_len_;
-        r_gs *= 1 + macet_f * (L_MT - macet_MT_len_) / macet_MT_len_; //possibly the Width_
-    }
-    // if(L_MT < .2)
-    // {
-    //     r_gs *= .1;
-    // }
-    return (r_gs);
-}
-
-double Phragmoplast::R_gp(double L_MT, double x)
-{
-    double r_gp = r_gp_ / (rel_MT_ + 1e-6);
-
-    if (L_MT > macet_MT_len_)
-    {
-        double macet_f = macet_mz_ + (macet_mz_ - macet_dz_) *
-                                         (x - Width_ + macet_MT_len_) / macet_MT_len_;
-        r_gp *= 1 + macet_f * (L_MT - macet_MT_len_) / macet_MT_len_;
-    }
-    // if(L_MT < .2)
-    // {
-    //     r_gp *= .1;
-    // }
-    return (r_gp);
-}
-
-double Phragmoplast::R_me_gs(double L_MT, double x)
-{
-    double r_me_gs = r_me_gs_ / (rel_MT_ + 1e-6);
-
-    if (L_MT > macet_MT_len_)
-    {
-        double macet_f = macet_mz_ + (macet_mz_ - macet_dz_) *
-                                         (x - Width_ + macet_MT_len_) / macet_MT_len_;
-        r_me_gs *= 1 + macet_f * (L_MT - macet_MT_len_) / macet_MT_len_;
-    }
-    // if(L_MT < .2)
-    // {
-    //     r_me_gs *= .1;
-    // }
-    return (r_me_gs);
-}
-
-double Phragmoplast::R_me_gp(double L_MT, double x)
-{
-    double r_me_gp = r_me_gp_ / (rel_MT_ + 1e-6);
-
-    if (L_MT > macet_MT_len_)
-    {
-        double macet_f = macet_mz_ + (macet_mz_ - macet_dz_) *
-                                         (x - Width_ + macet_MT_len_) / macet_MT_len_;
-        r_me_gp *= 1 + macet_f * (L_MT - macet_MT_len_) / macet_MT_len_;
-    }
-    // if(L_MT < .2)
-    // {
-    //     r_me_gp *= .1;
-    // }
-    return (r_me_gp);
+    double r_reseed = (rateReseed * (RelativeMT()));
+    if (type == PHP_TYPE_GROW_INSIDE)
+        r_reseed = (xInit * reseedSlope + reseedIntercept) * (RelativeMT());
+    if (r_reseed > rateReseed)
+        return rateReseed * (RelativeMT());
+    else if (r_reseed < 0)
+        return 0;
+    else
+        return r_reseed;
 }

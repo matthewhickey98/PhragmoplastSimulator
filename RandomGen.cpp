@@ -1,6 +1,4 @@
-#include "RandomGen.h"
-#include <ctime>
-#include <cmath>
+#include "RandomGen.hpp"
 
 const int IM1 = 2147483563;
 const int IM2 = 2147483399;
@@ -12,10 +10,11 @@ const int IR1 = 12211;
 const int IR2 = 3791;
 const int IMM1 = (IM1 - 1);
 const double EPS = 1.2e-7;
-//const double EPS = 1e-16;
 const double AM = (1.0 / IM1);
 const double NDIV = (1 + (double)IMM1 / (double)NTAB);
 const double RNMAX = (1.0 - EPS);
+const double EPS_DBL = 1e-14;
+const double RNMAX_DBL = 1 - EPS_DBL;
 
 /******************************************/
 /* Initialise the random number generator */
@@ -24,11 +23,11 @@ const double RNMAX = (1.0 - EPS);
 /* seed : initial seed.                   */
 /*        -1 -> use current time          */
 /******************************************/
-RandomGen::RandomGen(double min, double max, long seed) : rand_seed1_(0), rand_seed2_(123456789), min_(min), max_(max), normal_iset_(0), normal_cap_iset_(0)
+RandomGen::RandomGen(double min, double max, long seed)
+    : rand_seed1_(0), rand_seed2_(123456789), min_(min), max_(max), normal_iset_(0), normal_cap_iset_(0)
 {
     int j;
     long k;
-
     /* by default we take the current time as the seed */
     if (seed < 1)
         rand_seed1_ = (long)time(0);
@@ -53,7 +52,7 @@ RandomGen::RandomGen(double min, double max, long seed) : rand_seed1_(0), rand_s
 /*************************************************/
 /* Return the next number in the range ]min,max[ */
 /*************************************************/
-double RandomGen::next()
+double RandomGen::Next()
 {
     int j;
     long k;
@@ -150,9 +149,7 @@ double RandomGen::next_m1_1()
 /* Return double with increament 1e-14 dx */
 /* in range  ]1e-14,1-1e-14[ */
 /******************************************/
-const double EPS_DBL = 1e-14;
-const double RNMAX_DBL = 1 - EPS_DBL;
-double RandomGen::next_0_1_dbl()
+double RandomGen::Next0to1dbl()
 {
     double d2 = next_m1_1();
     d2 = (next_0_1() - EPS) * (1 - 2 * EPS_DBL) / (1 - 2 * EPS) + EPS_DBL + d2 * 1.2e-7;
@@ -171,7 +168,7 @@ double RandomGen::next_0_1_dbl()
 /*****************************************************/
 /* Normal distribution of zero mean and variance var */
 /*****************************************************/
-double RandomGen::normal(double var)
+double RandomGen::Normal(double var)
 {
     double fac, r, v1, v2;
 
@@ -182,8 +179,7 @@ double RandomGen::normal(double var)
             v1 = next_m1_1();
             v2 = next_m1_1();
             r = v1 * v1 + v2 * v2;
-        }
-        while (r >= 1.0);
+        } while (r >= 1.0);
         fac = var * sqrt(-2.0 * log(r) / r);
 
         normal_gset_ = v1 * fac;
@@ -200,7 +196,7 @@ double RandomGen::normal(double var)
 /*****************************************************/
 /* Normal distribution of zero mean and variance var */
 /*****************************************************/
-double RandomGen::normal_capped(double var, double max)
+double RandomGen::NormalCapped(double var, double max)
 {
     double fac, r, v1, v2, v;
 
@@ -211,8 +207,7 @@ double RandomGen::normal_capped(double var, double max)
             v1 = next_m1_1();
             v2 = next_m1_1();
             r = v1 * v1 + v2 * v2;
-        }
-        while (r >= 1.0);
+        } while (r >= 1.0);
         fac = var * sqrt(-2.0 * log(r) / r);
 
         normal_cap_gset_ = v1 * fac;
@@ -232,12 +227,13 @@ double RandomGen::normal_capped(double var, double max)
 /******************************/
 /* Return normal 2 dim vector */
 /******************************/
-void RandomGen::normal_2d(double var, double *v)
+void RandomGen::Normal2D(double var, std::vector<double> &v)
 {
     double r, phi;
 
-    r = normal(var);
+    r = Normal(var);
     phi = next_0_1() * 2 * M_PI;
+    v.resize((2));
     v[0] = r * cos(phi);
     v[1] = r * sin(phi);
 }
@@ -245,12 +241,13 @@ void RandomGen::normal_2d(double var, double *v)
 /******************************/
 /* Return normal 2 dim vector */
 /******************************/
-void RandomGen::normal_2d_capped(double var, double *v, double max)
+void RandomGen::Normal2DCapped(double var, std::vector<double> &v, double max)
 {
     double r, phi;
 
-    r = normal_capped(var, max);
+    r = NormalCapped(var, max);
     phi = next_0_1() * 2 * M_PI;
+    v.resize((2));
     v[0] = r * cos(phi);
     v[1] = r * sin(phi);
 }
@@ -258,13 +255,14 @@ void RandomGen::normal_2d_capped(double var, double *v, double max)
 /******************************/
 /* Return normal 3 dim vector */
 /******************************/
-void RandomGen::normal_3d(double var, double *v)
+void RandomGen::Normal3D(double var, std::vector<double> &v)
 {
     double r, phi, theta;
 
-    r = normal(var);
+    r = Normal(var);
     phi = next_0_1() * 2 * M_PI;
     theta = next_0_1() * M_PI;
+    v.resize((3));
     v[0] = r * sin(theta) * cos(phi);
     v[1] = r * sin(theta) * sin(phi);
     v[2] = r * cos(theta);
@@ -273,13 +271,14 @@ void RandomGen::normal_3d(double var, double *v)
 /******************************/
 /* Return normal 3 dim vector */
 /******************************/
-void RandomGen::normal_3d_capped(double var, double *v, double max)
+void RandomGen::Normal3DCapped(double var, std::vector<double> &v, double max)
 {
     double r, phi, theta;
 
-    r = normal_capped(var, max);
+    r = NormalCapped(var, max);
     phi = next_0_1() * 2 * M_PI;
     theta = next_0_1() * M_PI;
+    v.resize((3));
     v[0] = r * sin(theta) * cos(phi);
     v[1] = r * sin(theta) * sin(phi);
     v[2] = r * cos(theta);
@@ -300,13 +299,13 @@ void RandomGen::normal_3d_capped(double var, double *v, double max)
 /*   => x = int p(y) dy = (1-b/2)*y+b*y^2/2 */
 /*   => y = (b/2-1+sqrt((1-b/2)^2+2bx)))/b  */
 /********************************************/
-double RandomGen::trapezium(double b)
+double RandomGen::Trapezium(double b)
 {
     if ((-1e-7 < b) && (b < 1e-7))
     {
-        return (next());
+        return (Next());
     } // slope too smal
-    return ((b * 0.5 - 1 + sqrt((b * 0.5 - 1) * (b * 0.5 - 1) + 2 * b * next())) / b);
+    return ((b * 0.5 - 1 + sqrt((b * 0.5 - 1) * (b * 0.5 - 1) + 2 * b * Next())) / b);
 }
 
 /***************************************/
@@ -315,5 +314,5 @@ double RandomGen::trapezium(double b)
 /***************************************/
 int RandomGen_int::next()
 {
-    return (imin_ + (int)floor(RandomGen::next() * (imax_ - imin_ + 1)));
+    return (imin_ + (int)floor(RandomGen::Next() * (imax_ - imin_ + 1)));
 }

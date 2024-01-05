@@ -1,6 +1,6 @@
-#include "readpars.h"
+#include "readpars.hpp"
 
-bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
+bool ReadOneLine(std::ifstream *ifs, std::string &name, std::string &val,
                    int &line_no)
 {
     bool skip = true;
@@ -40,8 +40,7 @@ bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
         std::stringstream ss;
         ss << "Error line " << line_no << ": Missing value for " << name;
         ss >> error;
-        throw (std::invalid_argument(error));
-
+        throw(std::invalid_argument(error));
     }
 
     /* Read separating spaces */
@@ -53,8 +52,7 @@ bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
         std::stringstream ss;
         ss << "Error line " << line_no << ": Missing value for " << name;
         ss >> error;
-        throw (std::invalid_argument(error));
-
+        throw(std::invalid_argument(error));
     }
 
     /* Read Value */
@@ -72,17 +70,16 @@ bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
                     std::stringstream ss;
                     ss << "Error line " << line_no << ": Escape character at end of line";
                     ss >> error;
-                    throw (std::invalid_argument(error));
-
+                    throw(std::invalid_argument(error));
                 }
                 switch (c)
                 {
-                    case 'n':
-                        c = '\n';
-                        break;
-                    case 't':
-                        c = '\t';
-                        break;
+                case 'n':
+                    c = '\n';
+                    break;
+                case 't':
+                    c = '\t';
+                    break;
                 }
                 val += c;
             }
@@ -104,8 +101,7 @@ bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
         std::stringstream ss;
         ss << "Error line " << line_no << ": string not terminated";
         ss >> error;
-        throw (std::invalid_argument(error));
-
+        throw(std::invalid_argument(error));
     }
     else /* Read Rest of the line until EOL or '#'*/
     {
@@ -134,7 +130,7 @@ bool read_one_line(std::ifstream *ifs, std::string &name, std::string &val,
 /* and in the same order                       */
 /* Lines starting with a # are skipped         */
 /***********************************************/
-void read_pars(const char *fname, struct Parameter *par)
+void ReadPars(const char *fname, struct sParameter *par)
 {
     std::ifstream *ifs;
     std::string Name, Val;
@@ -144,12 +140,11 @@ void read_pars(const char *fname, struct Parameter *par)
     {
         std::string error;
         error = " ERROR: Can't open file ";
-        error+=fname;
-        throw (std::invalid_argument(error));
-
+        error += fname;
+        throw(std::invalid_argument(error));
     }
 
-    while (par->name && read_one_line(ifs, Name, Val, line_no))
+    while (par->name && ReadOneLine(ifs, Name, Val, line_no))
     {
         if (std::string(par->name) != Name)
         {
@@ -160,28 +155,26 @@ void read_pars(const char *fname, struct Parameter *par)
                  << " : expect parameter " << par->name;
             ss >> error;
             cout << error << endl;
-            throw (std::invalid_argument::exception());
-
+            throw(std::invalid_argument::exception());
         }
         switch (par->type)
         {
-            case T_INT:
-                sscanf(Val.c_str(), "%d", (int *)(par->p));
-                break;
-            case T_DOUBLE:
-                sscanf(Val.c_str(), "%lg", (double *)(par->p));
-                break;
-            case T_STRING:
-                strcpy((char *)(par->p), Val.c_str());
-                break;
-            default:
-                std::string error;
-                std::stringstream ss;
-                ss << " ERROR: : invalid parameter type " << par->type << "\n";
-                ss >> error;
-                cout << error << endl;
-                throw (std::invalid_argument(error));
-
+        case T_INT:
+            sscanf(Val.c_str(), "%d", (int *)(par->p));
+            break;
+        case T_DOUBLE:
+            sscanf(Val.c_str(), "%lg", (double *)(par->p));
+            break;
+        case T_STRING:
+            strcpy((char *)(par->p), Val.c_str());
+            break;
+        default:
+            std::string error;
+            std::stringstream ss;
+            ss << " ERROR: : invalid parameter type " << par->type << "\n";
+            ss >> error;
+            cout << error << endl;
+            throw(std::invalid_argument(error));
         }
 
         ++par;
@@ -194,7 +187,7 @@ void read_pars(const char *fname, struct Parameter *par)
 /* Return : index of name in string array                  */
 /*          -1 : name not found                            */
 /***********************************************************/
-int string_index(const char **ptr, const char *name)
+int StringIndex(const char **ptr, const char *name)
 {
     int i = 0;
 
@@ -206,3 +199,4 @@ int string_index(const char **ptr, const char *name)
     }
     return (-1);
 }
+

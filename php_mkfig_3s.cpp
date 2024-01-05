@@ -1,14 +1,17 @@
-#include <stdlib.h>
-#include <string>
-#include <iostream>
-#include <string.h>
-#include "Phragmoplast.h"
-#include <stdio.h>
-#include <list>
-#include <iterator>
-#include <Magick++.h>
+#include "php_const.hpp"
+// #include <Magick++.h>
+#include "Bitmap.hpp"
+#include "FrameName.hpp"
+#include "RandomGen.hpp"
+#include "Microtubule.hpp"
+#include "Phragmoplast.hpp"
+#include "RandomGen.hpp"
+#include "readpars.hpp"
+
+bool enableSeedPoints = false;
 
 const char *VERSION = "php_mkfig: v1.0; 10/12/10; B. Piette";
+
 struct Pars
 {
     double blur_radius; //  Blur radius
@@ -26,10 +29,9 @@ struct Pars
 //};
 
 const char *help[] =
-{
-    "php_mkfig_3s [-blur_radius=br R] [-grf_max=M R] [-no_time=nt R]",
-    0
-};
+    {
+        "php_mkfig_3s [-blur_radius=br R] [-grf_max=M R] [-no_time=nt R]",
+        0};
 
 const int PHP_BUFFSIZE = PHP_PATH_LENGTH + 50;
 
@@ -53,16 +55,15 @@ int str2int(const char *s)
 //     def("runSim", figureMain);
 // }
 
-
 int main(int argc, char **argv)
 {
     int i;
     char Buffer[PHP_BUFFSIZE];
     std::list<std::string> files;
-    Magick::InitializeMagick(NULL);
+    // Magick::InitializeMagick(NULL);
     if (argc <= 1)
     {
-        std::cerr << "php_mkfig [-blur_radius=br R] [-grf_max=M R] [-no_time=nt R]\n";
+        std::cout << "php_mkfig [-blur_radius=br R] [-grf_max=M R] [-no_time=nt R]\n";
         exit(0);
     }
 
@@ -70,7 +71,7 @@ int main(int argc, char **argv)
     {
         for (i = 1; i < argc; i++)
         {
-            std::cerr << argv[i] << " Radius " << par.blur_radius << "\n";
+            std::cout << argv[i] << " Radius " << par.blur_radius << "\n";
             if (!strcmp(argv[i], "-blur_radius"))
             {
                 par.blur_radius = str2dbl(argv[++i]);
@@ -83,6 +84,10 @@ int main(int argc, char **argv)
             {
                 par.no_time = str2int(argv[++i]);
             }
+            else if (!strcmp(argv[i], "-seeds"))
+            {
+                enableSeedPoints = true;
+            }
             else
             {
                 files.push_back(std::string(argv[i]));
@@ -91,7 +96,7 @@ int main(int argc, char **argv)
     }
     catch (std::string s_err)
     {
-        std::cerr << "php_mkfig [-blur_radius=br R] [-t_FRAP=t R] [-grf_max=M R] [-no_time=nt R]\n";
+        std::cout << "php_mkfig [-blur_radius=br R] [-t_FRAP=t R] [-grf_max=M R] [-no_time=nt R]\n";
         exit(1);
     }
 
@@ -106,21 +111,21 @@ int main(int argc, char **argv)
         {
             sprintf(Buffer, "_R%g.jpg", par.blur_radius);
             fname.replace(pos, 4, Buffer);
-            std::cerr << "Creating " << fname << "  from " << *it << "\n";
+            std::cout << "Creating " << fname << "  from " << *it << "\n";
 
-            Bitmap php_bm((*it).c_str());
+            Bitmap php_bm((*it));
             php_bm.set_Max(par.grf_max);
             if (par.blur_radius > 0.2)
             {
-                php_bm.gaussian_blur(par.blur_radius);
+                php_bm.GaussianBlur(par.blur_radius);
             }
-            php_bm.output(fname.c_str(), !par.no_time);
+            php_bm.Output(fname, !par.no_time, 0.0);
         }
         else
         {
-            std::cerr << "Ignoring file " << fname << ": not a .bma file\n";
+            std::cout << "Ignoring file " << fname << ": not a .bma file\n";
         }
         ++i;
     }
-    std::cerr << "Radius " << par.blur_radius << "\n";
+    std::cout << "Radius " << par.blur_radius << "\n";
 }
